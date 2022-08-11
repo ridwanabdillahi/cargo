@@ -240,10 +240,19 @@ fn rustc(cx: &mut Context<'_, '_>, unit: &Unit, exec: &Arc<dyn Executor>) -> Car
     let rustc_dep_info_loc = root.join(dep_info_name);
     let dep_info_loc = fingerprint::dep_info_loc(cx, unit);
 
-    rustc.args(cx.bcx.rustflags_args(unit));
+    // If the user has specified rustflags on the command line
+    // via the --rustflag argument, these override any default
+    // rustflags from env variables or manifest keys.
+    if !unit.rustflags.is_empty() {
+        rustc.args(&unit.rustflags);
+    } else {
+        rustc.args(cx.bcx.rustflags_args(unit));
+    }
+
     if cx.bcx.config.cli_unstable().binary_dep_depinfo {
         rustc.arg("-Z").arg("binary-dep-depinfo");
     }
+
     let mut output_options = OutputOptions::new(cx, unit);
     let package_id = unit.pkg.package_id();
     let target = Target::clone(&unit.target);

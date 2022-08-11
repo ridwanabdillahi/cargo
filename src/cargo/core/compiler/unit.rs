@@ -55,6 +55,9 @@ pub struct UnitInner {
     /// The `cfg` features to enable for this unit.
     /// This must be sorted.
     pub features: Vec<InternedString>,
+    /// The rustflags to set for this unit.
+    /// This must be sorted.
+    pub rustflags: Vec<InternedString>,
     // if `true`, the dependency is an artifact dependency, requiring special handling when
     // calculating output directories, linkage and environment variables provided to builds.
     pub artifact: IsArtifact,
@@ -181,6 +184,7 @@ impl UnitInterner {
         kind: CompileKind,
         mode: CompileMode,
         features: Vec<InternedString>,
+        rustflags: Vec<InternedString>,
         is_std: bool,
         dep_hash: u64,
         artifact: IsArtifact,
@@ -213,6 +217,7 @@ impl UnitInterner {
             kind,
             mode,
             features,
+            rustflags,
             is_std,
             dep_hash,
             artifact,

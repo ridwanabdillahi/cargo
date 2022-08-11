@@ -15,6 +15,7 @@ use crate::util::{
 use crate::CargoResult;
 use anyhow::bail;
 use cargo_util::paths;
+use itertools::Itertools;
 use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
 
@@ -250,6 +251,19 @@ pub trait AppExt: Sized {
                 "Timing output formats (unstable) (comma separated): html, json",
             )
             .value_name("FMTS")
+            .require_equals(true),
+        )
+    }
+
+    fn arg_rustflag(self) -> Self {
+        self._arg(
+            multi_opt(
+                "rustflag",
+                "RUSTFLAG",
+                "Rustflag (unstable) to set for the package",
+            )
+            .value_name("RUSTFLAG")
+            .min_values(1)
             .require_equals(true),
         )
     }
@@ -593,6 +607,7 @@ pub trait ArgMatchesExt {
         let opts = CompileOptions {
             build_config,
             cli_features: self.cli_features()?,
+            rustflags: self.rustflags(config)?,
             spec,
             filter: CompileFilter::from_raw_arguments(
                 self.flag("lib"),
@@ -635,6 +650,27 @@ pub trait ArgMatchesExt {
             self.flag("all-features"),
             !self.flag("no-default-features"),
         )
+    }
+
+    fn rustflags(&self, config: &Config) -> CargoResult<Vec<InternedString>> {
+        let mut rustflags = Vec::new();
+        if self._contains("rustflag") {
+            config
+                .cli_unstable()
+                .fail_if_stable_opt("--rustflag", 7405)?;
+
+            for rustflag in self._values_of("rustflag") {
+                rustflags.push(InternedString::new(rustflag.as_str()));
+            }
+        }
+
+        // Ensure rustflag entries are sorted.
+        rustflags = rustflags
+            .iter()
+            .sorted()
+            .cloned()
+            .collect::<Vec<InternedString>>();
+        Ok(rustflags)
     }
 
     fn compile_options_for_single_package(
